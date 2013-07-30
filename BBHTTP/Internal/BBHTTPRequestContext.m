@@ -78,6 +78,9 @@
         nextState = BBHTTPResponseStateReadingStatusLine; // ... unless it's a 100-Continue; if so, go back to the start
         // TODO I'm assuming 100-Continue's never have data...
         _uploadAccepted = YES;
+    } else if (self.currentResponse.code==301) {
+        nextState = BBHTTPResponseStateReadingStatusLine; // ... unless it's a 301-Redirect; if so, go back to the start
+        // TODO I'm assuming 301-Redirect's never have data...
     } else if (!_discardBodyForCurrentResponse) {
         NSError* error = nil;
         parsedContent = [_request.responseContentHandler parseContent:&error];

@@ -34,11 +34,13 @@
 
 - (BOOL)application:(UIApplication*)application didFinishLaunchingWithOptions:(NSDictionary*)launchOptions
 {
-    [self getImageExample];
+//    [self getImageExample];
 //    [self getJsonExample];
 //    [self getExample];
 //    [self postExample];
-
+    [self testRedirect];
+    
+    
     return YES;
 }
 
@@ -101,5 +103,25 @@
         NSLog(@"Error: %@", [error localizedDescription]);
     }];
 }
+
+- (void)testRedirect
+{
+    [BBHTTPExecutor sharedExecutor].verbose=YES;
+    
+    BBHTTPRequest* redirect=[BBHTTPRequest readResource:@"http://pass.telekom.de"];
+
+    [redirect setMaxRedirects:-1];
+    
+    [redirect execute:^(BBHTTPResponse* response) {
+        NSLog(@"Finished: %u %@ -- received %u bytes of '%@' %@",
+              response.code, response.message, response.contentSize,
+              response[@"Content-Type"], response.headers);
+        
+    } error:^(NSError* error) {
+        NSLog(@"Error: %@", [error localizedDescription]);
+    }];
+ 
+}
+
 
 @end
