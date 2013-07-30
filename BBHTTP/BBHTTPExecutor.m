@@ -73,7 +73,7 @@ static size_t BBHTTPExecutorReadHeader(uint8_t* buffer, size_t size, size_t leng
     // End of headers reached, data will follow
     BBHTTPLogTrace(@"%@ | All headers received.", context);
     BOOL canProceed = YES;
-    if ([context isCurrentResponse100Continue]) {
+    if ([context isCurrentResponse100Continue]||context.currentResponse.code==301) {
         // Subsequent callbacks will hit BBHTTPExecutorReadStatusLine()
         [context finishCurrentResponse];
     } else {
@@ -518,12 +518,12 @@ static BOOL BBHTTPExecutorInitialized = NO;
     }
 
     // Setup - configure redirections
-//    if (context.request.maxRedirects == 0) {
-//        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, NO);
-//    } else {
-//        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, YES);
-//        curl_easy_setopt(handle, CURLOPT_MAXREDIRS, context.request.maxRedirects);
-//    }
+    if (context.request.maxRedirects == 0) {
+        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, NO);
+    } else {
+        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, YES);
+        curl_easy_setopt(handle, CURLOPT_MAXREDIRS, context.request.maxRedirects);
+    }
 
     // Setup - misc configuration
     curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 1L);
