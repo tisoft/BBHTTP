@@ -538,6 +538,7 @@ static BOOL BBHTTPExecutorInitialized = NO;
     } else {
         curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, YES);
         curl_easy_setopt(handle, CURLOPT_MAXREDIRS, context.request.maxRedirects);
+        curl_easy_setopt(handle, CURLOPT_AUTOREFERER, YES);
     }
 
     // Setup - misc configuration
