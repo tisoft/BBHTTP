@@ -110,12 +110,16 @@
     
     BBHTTPRequest* redirect=[BBHTTPRequest readResource:@"http://pass.telekom.de"];
 
+redirect[@"User-Agent"]=@"Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3";
+                             
     [redirect setMaxRedirects:-1];
     
     [redirect execute:^(BBHTTPResponse* response) {
         NSLog(@"Finished: %u %@ -- received %u bytes of '%@' %@",
               response.code, response.message, response.contentSize,
               response[@"Content-Type"], response.headers);
+        NSLog(@"Content: %@", [[NSString alloc] initWithData:response.content
+                                                    encoding:NSUTF8StringEncoding]);
         
     } error:^(NSError* error) {
         NSLog(@"Error: %@", [error localizedDescription]);
