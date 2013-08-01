@@ -73,7 +73,7 @@ static size_t BBHTTPExecutorReadHeader(uint8_t* buffer, size_t size, size_t leng
     // End of headers reached, data will follow
     BBHTTPLogTrace(@"%@ | All headers received.", context);
     BOOL canProceed = YES;
-    if ([context isCurrentResponse100Continue]) {
+    if ([context isCurrentResponse100Continue]||context.currentResponse.code==301) {
         // Subsequent callbacks will hit BBHTTPExecutorReadStatusLine()
         [context finishCurrentResponse];
     } else {
@@ -127,18 +127,29 @@ static size_t BBHTTPExecutorSendCallback(uint8_t* buffer, size_t size, size_t le
     }
 }
 
+static size_t BBHTTPExecutorHeaderCallback(uint8_t* buffer, size_t size, size_t length, BBHTTPRequestContext* context)
+{
+    if ([context.request wasCancelled]) return 0;
+    
+    switch (context.state) {
+        case BBHTTPResponseStateReady:
+        case BBHTTPResponseStateReadingStatusLine:
+            return BBHTTPExecutorReadStatusLine(buffer, size, length, context);
+            
+        case BBHTTPResponseStateReadingHeaders:
+            return BBHTTPExecutorReadHeader(buffer, size, length, context);
+
+        default:
+            // never happens...
+            return 0;
+    }
+}
+
 static size_t BBHTTPExecutorReceiveCallback(uint8_t* buffer, size_t size, size_t length, BBHTTPRequestContext* context)
 {
     if ([context.request wasCancelled]) return 0;
 
     switch (context.state) {
-        case BBHTTPResponseStateReady:
-        case BBHTTPResponseStateReadingStatusLine:
-            return BBHTTPExecutorReadStatusLine(buffer, size, length, context);
-
-        case BBHTTPResponseStateReadingHeaders:
-            return BBHTTPExecutorReadHeader(buffer, size, length, context);
-
         case BBHTTPResponseStateReadingData:
             return BBHTTPExecutorAppendData(buffer, size, length, context);
 
@@ -483,7 +494,7 @@ static BOOL BBHTTPExecutorInitialized = NO;
         curl_slist_append(headers, "Expect: ");
     }
 
-    curl_easy_setopt(handle, CURLOPT_HEADER, 1L);
+    curl_easy_setopt(handle, CURLOPT_HEADER, 0L);
     curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
 
     // Setup - prepare upload if required
@@ -498,6 +509,10 @@ static BOOL BBHTTPExecutorInitialized = NO;
         curl_easy_setopt(handle, CURLOPT_READFUNCTION, NULL);
         curl_easy_setopt(handle, CURLOPT_READDATA, NULL);
     }
+
+    // Setup - header handling callback
+    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, BBHTTPExecutorHeaderCallback);
+    curl_easy_setopt(handle, CURLOPT_HEADERDATA, context);
 
     // Setup - response handling callback
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, BBHTTPExecutorReceiveCallback);
@@ -518,12 +533,13 @@ static BOOL BBHTTPExecutorInitialized = NO;
     }
 
     // Setup - configure redirections
-//    if (context.request.maxRedirects == 0) {
-//        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, NO);
-//    } else {
-//        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, YES);
-//        curl_easy_setopt(handle, CURLOPT_MAXREDIRS, context.request.maxRedirects);
-//    }
+    if (context.request.maxRedirects == 0) {
+        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, NO);
+    } else {
+        curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, YES);
+        curl_easy_setopt(handle, CURLOPT_MAXREDIRS, context.request.maxRedirects);
+        curl_easy_setopt(handle, CURLOPT_AUTOREFERER, YES);
+    }
 
     // Setup - misc configuration
     curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 1L);
