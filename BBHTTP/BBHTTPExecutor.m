@@ -73,7 +73,7 @@ static size_t BBHTTPExecutorReadHeader(uint8_t* buffer, size_t size, size_t leng
     // End of headers reached, data will follow
     BBHTTPLogTrace(@"%@ | All headers received.", context);
     BOOL canProceed = YES;
-    if ([context isCurrentResponse100Continue]||context.currentResponse.code==301) {
+    if ([context isCurrentResponse100Continue]||context.currentResponse.code==301||context.currentResponse.code==302) {
         // Subsequent callbacks will hit BBHTTPExecutorReadStatusLine()
         [context finishCurrentResponse];
     } else {
